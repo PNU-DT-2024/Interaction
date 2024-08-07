@@ -1,12 +1,19 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
 from flask_socketio import SocketIO, emit
-import threading
+from flask_cors import CORS
+import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")  # 모든 도메인에서의 소켓 연결을 허용
+socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app)
 
-data = {}
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 @app.route('/')
 def index():
@@ -14,10 +21,30 @@ def index():
 
 @app.route('/update_data', methods=['POST'])
 def update_data():
-    global data
     data = request.json
     socketio.emit('data_update', data)
     return jsonify(success=True)
+
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    if 'image' not in request.files:
+        return jsonify(error='No file part'), 400
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify(error='No selected file'), 400
+    if file:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return jsonify(url=url_for('uploaded_file', filename=filename))
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/image_page')
+def image_page():
+    image_url = request.args.get('url')
+    return render_template('image_page.html', image_url=image_url)
 
 @socketio.on('connect')
 def handle_connect():
@@ -27,13 +54,10 @@ def handle_connect():
 def handle_disconnect():
     print("Client disconnected")
 
-def run_server():
-    socketio.run(app, debug=True, use_reloader=False)
-
 if __name__ == '__main__':
-    server_thread = threading.Thread(target=run_server)
-    server_thread.start()
+    socketio.run(app, debug=True)
 
-    # Simulate hand_tracking.py running and sending data
-    import hand_tracking
-    hand_tracking.video_feed()
+
+
+
+
