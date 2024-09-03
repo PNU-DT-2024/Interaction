@@ -3,10 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hand Art Image</title>
+    <title>Image Load Test</title>
+    <style>
+      #image {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 20px auto;
+      }
+      .loading {
+        text-align: center;
+        font-size: 24px;
+        color: #666;
+      }
+    </style>
   </head>
   <body>
-    <img src="{{ image_url }}" alt="Hand Art" />
-    <a href="{{ image_url }}" download="hand_art.png">Download</a>
+    <h1>Image Load Test</h1>
+    <div class="loading">Loading image...</div>
+    <img
+      id="image"
+      src="{{ image_url }}"
+      alt="Generated Image"
+      style="display: none"
+      onload="document.querySelector('.loading').style.display='none'; this.style.display='block';"
+      onerror="document.querySelector('.loading').textContent='Failed to load image.';"
+    />
   </body>
 </html>
