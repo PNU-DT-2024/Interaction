@@ -11,7 +11,16 @@ export const config = {
 };
 
 export default async (req, res) => {
-  console.log("업로드 요청 수신됨");
+  // CORS 헤더 추가
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    // CORS Preflight 요청에 대한 응답
+    res.status(200).end();
+    return;
+  }
 
   const form = new IncomingForm();
   form.uploadDir = uploadDir;
@@ -34,7 +43,6 @@ export default async (req, res) => {
     const filePath = path.join(uploadDir, files.file[0].newFilename);
     const imageUrl = `/uploads/${path.basename(filePath)}`;
 
-    // 이미지 페이지 HTML 읽기
     fs.readFile(
       path.join(process.cwd(), "templates", "image_page.html"),
       "utf8",
@@ -45,11 +53,9 @@ export default async (req, res) => {
           return;
         }
 
-        // 이미지 URL 삽입
         const modifiedHtml = html.replace("{{ image_url }}", imageUrl);
         console.log("HTML 페이지 반환됨:", imageUrl);
 
-        // HTML 응답
         res.setHeader("Content-Type", "text/html");
         res.status(200).send(modifiedHtml);
       }
