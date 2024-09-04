@@ -2,8 +2,6 @@ import { IncomingForm } from "formidable";
 import fs from "fs";
 import path from "path";
 
-// Vercel에서는 /public 디렉토리에 접근할 수 없으므로, 임시 디렉토리를 사용합니다.
-// const uploadDir = "/tmp/uploads";
 const uploadDir = path.join(process.cwd(), "public/uploads");
 
 export const config = {
@@ -13,6 +11,17 @@ export const config = {
 };
 
 export default async (req, res) => {
+  // CORS 헤더 추가
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    // CORS Preflight 요청에 대한 응답
+    res.status(200).end();
+    return;
+  }
+
   const form = new IncomingForm();
   form.uploadDir = uploadDir; // 업로드 디렉토리
   form.keepExtensions = true;
@@ -24,9 +33,12 @@ export default async (req, res) => {
 
   form.parse(req, (err, fields, files) => {
     if (err) {
+      console.error("파일 처리 중 오류 발생:", err);
       res.status(500).json({ error: "Error processing the file" });
       return;
     }
+
+    console.log("파일 업로드됨:", files.file[0].newFilename);
 
     const filePath = path.join(uploadDir, files.file[0].newFilename);
     res.status(200).json({ filePath: `/uploads/${path.basename(filePath)}` });
