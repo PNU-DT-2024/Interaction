@@ -1,33 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Image Load Test</title>
-    <style>
-      #image {
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 20px auto;
-      }
-      .loading {
-        text-align: center;
-        font-size: 24px;
-        color: #666;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Image Load Test</h1>
-    <div class="loading">Loading image...</div>
-    <img
-      id="image"
-      src="{{ image_url }}"
-      alt="Generated Image"
-      style="display: none"
-      onload="document.querySelector('.loading').style.display='none'; this.style.display='block';"
-      onerror="document.querySelector('.loading').textContent='Failed to load image.';"
-    />
-  </body>
-</html>
+import { IncomingForm } from "formidable"; import fs from "fs"; import path from
+"path"; const uploadDir = path.join(process.cwd(), "public/uploads"); export
+const config = { api: { bodyParser: false, }, }; export default async (req, res)
+=> { const form = new IncomingForm(); form.uploadDir = uploadDir;
+form.keepExtensions = true; if (!fs.existsSync(uploadDir)) {
+fs.mkdirSync(uploadDir, { recursive: true }); } form.parse(req, (err, fields,
+files) => { if (err) { console.error("파일 처리 중 오류 발생:", err);
+res.status(500).json({ error: "Error processing the file" }); return; } const
+filePath = path.join(uploadDir, files.file[0].newFilename); const imageUrl =
+`/uploads/${path.basename(filePath)}`; // 이미지 페이지 HTML 읽기
+fs.readFile(path.join(process.cwd(), 'templates', 'image_page.html'), 'utf8',
+(err, html) => { if (err) { console.error("HTML 파일 읽기 중 오류 발생:", err);
+res.status(500).json({ error: "Error reading HTML file" }); return; } // 이미지
+URL 삽입 const modifiedHtml = html.replace('{{ image_url }}', imageUrl); // HTML
+응답 res.setHeader('Content-Type', 'text/html');
+res.status(200).send(modifiedHtml); }); }); };
