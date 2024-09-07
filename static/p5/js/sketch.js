@@ -180,7 +180,7 @@ function saveImage() {
 
     console.log("업로드를 위한 FormData 준비 완료.");
 
-    fetch("https://interaction-beryl.vercel.app/api/upload", {
+    fetch("https://interaction-beryl.vercel.app", {
       // 경로 수정 및 mode 추가
       method: "POST",
       body: formData,
