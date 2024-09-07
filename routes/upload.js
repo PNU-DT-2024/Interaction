@@ -11,10 +11,8 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const statusFilePath = path.join(__dirname, "upload_status.txt");
-
-// 업로드 상태 파일이 존재하는지 확인
-let hasUploaded = fs.existsSync(statusFilePath);
+// 메모리 내에서 업로드 상태 유지
+let hasUploaded = false;
 
 // 업로드 상태를 확인하는 미들웨어
 router.use((req, res, next) => {
@@ -58,10 +56,8 @@ router.post("/upload", (req, res) => {
         return res.status(500).json({ error: "Cloudinary 업로드 실패" });
       }
 
-      // 업로드 성공 시 상태 파일 생성
-      fs.writeFileSync(statusFilePath, "uploaded");
+      // 업로드 성공 시 상태 업데이트
       hasUploaded = true;
-
       res
         .status(200)
         .json({ message: "이미지 업로드 성공", url: result.secure_url });
