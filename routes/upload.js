@@ -58,9 +58,11 @@ router.post("/upload", (req, res) => {
 
       // 업로드 성공 시 상태 업데이트
       hasUploaded = true;
-      res
-        .status(200)
-        .json({ message: "이미지 업로드 성공", url: result.secure_url });
+      res.status(200).json({
+        message: "이미지 업로드 성공",
+        imageUrl: result.secure_url,
+        htmlPageUrl: "https://interaction-beryl.vercel.app/image_page.html", // HTML 페이지 URL
+      });
     });
   });
 });
