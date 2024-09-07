@@ -6,6 +6,7 @@ let isDrawing = false;
 let handDetected = false; // 손 감지 여부를 추적하는 변수
 let saveTriggered = false; // 키보드 1이 눌렸는지 여부를 추적하는 변수
 let currentMessage = "";
+let imgData;
 
 function setup() {
   createCanvas(1280, 720).parent("container");
@@ -163,33 +164,42 @@ function keyPressed() {
 }
 
 function saveImage() {
-  let shapeCanvas = createGraphics(1280, 720);
-  shapeCanvas.background(255);
+  // 캔버스 이미지를 데이터 URL 형식으로 가져오기
+  const dataUrl = get().canvas.toDataURL("image/png");
 
-  noStroke();
-  shapeCanvas.fill(0);
-  shapeCanvas.textSize(32);
-  shapeCanvas.textAlign(CENTER, CENTER);
-  shapeCanvas.text("손", width / 2, height / 2);
+  // imgData에 데이터 URL 저장
+  imgData = dataUrl;
 
-  shapeCanvas.canvas.toBlob((blob) => {
-    const formData = new FormData();
-    formData.append("file", blob, "hand_image.png");
-
-    fetch("https://your-vercel-app.vercel.app/api/upload", {
+  // 데이터 URL을 서버로 전송하기
+  if (imgData) {
+    fetch("http://127.0.0.1:5500/api/upload", {
       method: "POST",
-      body: formData,
-      mode: "cors",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: imgData }),
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.imageUrl) {
-          console.log("이미지 업로드 성공. 파일 URL:", data.imageUrl);
-          window.open(data.imageUrl, "_blank"); // 새 탭에서 이미지 페이지 열기
+        if (data.url) {
+          console.log("이미지 업로드 성공:", data.url);
+          currentMessage = `이미지가 업로드되었습니다: ${data.url}`;
+          // URL을 포함하는 페이지로 리디렉션
+          window.location.href = `https://interaction-beryl.vercel.app/image_page.html?image=${encodeURIComponent(
+            data.url
+          )}`;
         } else {
-          console.error("이미지 업로드 오류:", data);
+          console.error("업로드 오류:", data.error);
+          saveTriggered = false;
+          isDrawing = false;
         }
       })
-      .catch((error) => console.error("이미지 업로드 중 오류 발생:", error));
-  });
+      .catch((error) => {
+        console.error("이미지 업로드 오류:", error);
+        saveTriggered = false;
+        isDrawing = false;
+      });
+  } else {
+    console.error("imgData가 정의되지 않았습니다.");
+  }
 }

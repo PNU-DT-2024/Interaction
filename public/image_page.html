@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Uploaded Image</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+      }
+      img {
+        max-width: 100%;
+        max-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <img id="uploadedImage" src="" alt="Uploaded Image" />
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const imageUrl = urlParams.get("image");
+      if (imageUrl) {
+        document.getElementById("uploadedImage").src = imageUrl;
+      }
+    </script>
+  </body>
+</html>
