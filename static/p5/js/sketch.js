@@ -181,8 +181,10 @@ function saveImage() {
     console.log("업로드를 위한 FormData 준비 완료.");
 
     fetch("https://interaction-beryl.vercel.app/api/upload", {
+      // 경로 수정 및 mode 추가
       method: "POST",
       body: formData,
+      mode: "cors", // CORS 모드 명시
     })
       .then((response) => response.json())
       .then((data) => {

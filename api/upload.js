@@ -17,8 +17,13 @@ export default async (req, res) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
-    // CORS Preflight 요청에 대한 응답
+    // Preflight 요청에 응답
     res.status(200).end();
+    return;
+  }
+
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method Not Allowed" });
     return;
   }
 
