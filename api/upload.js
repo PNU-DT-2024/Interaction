@@ -2,7 +2,9 @@ import { IncomingForm } from "formidable";
 import fs from "fs";
 import path from "path";
 
-const uploadDir = path.join(process.cwd(), "public/uploads");
+/*서버리스 함수가 위치한 API 엔드포인트*/
+
+const uploadDir = path.join(process.cwd(), "api/uploads");
 
 export const config = {
   api: {
