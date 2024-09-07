@@ -12,7 +12,7 @@ export const config = {
 
 export default async (req, res) => {
   // CORS 헤더 추가
-  res.setHeader("Access-Control-Allow-Origin", "*"); // 필요에 따라 적절한 도메인으로 설정
+  res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:5500"); // 필요에 따라 적절한 도메인으로 설정
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
