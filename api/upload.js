@@ -12,7 +12,7 @@ export const config = {
 
 export default async (req, res) => {
   // CORS 헤더 추가
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", "*"); // 필요에 따라 적절한 도메인으로 설정
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
@@ -33,7 +33,6 @@ export default async (req, res) => {
 
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
-    console.log("업로드 디렉토리 생성됨");
   }
 
   form.parse(req, (err, fields, files) => {
@@ -43,9 +42,13 @@ export default async (req, res) => {
       return;
     }
 
-    console.log("파일 업로드됨:", files.file[0].newFilename);
+    const uploadedFile = files.file ? files.file[0] : null;
+    if (!uploadedFile) {
+      res.status(400).json({ error: "No file uploaded" });
+      return;
+    }
 
-    const filePath = path.join(uploadDir, files.file[0].newFilename);
+    const filePath = path.join(uploadDir, uploadedFile.newFilename);
     const imageUrl = `/uploads/${path.basename(filePath)}`;
 
     fs.readFile(
@@ -59,7 +62,6 @@ export default async (req, res) => {
         }
 
         const modifiedHtml = html.replace("{{ image_url }}", imageUrl);
-        console.log("HTML 페이지 반환됨:", imageUrl);
 
         res.setHeader("Content-Type", "text/html");
         res.status(200).send(modifiedHtml);
