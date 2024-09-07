@@ -153,16 +153,6 @@ function draw() {
   }
 }
 
-function keyPressed() {
-  if (key === "1") {
-    if (!handDetected) {
-      console.log(
-        "손이 감지되지 않았습니다. 5초 대기 후 화면 저장을 시도합니다."
-      );
-    }
-  }
-}
-
 function saveImage() {
   // 캔버스 이미지를 데이터 URL 형식으로 가져오기
   const dataUrl = get().canvas.toDataURL("image/png");
@@ -181,17 +171,15 @@ function saveImage() {
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.url) {
-          console.log("이미지 업로드 성공:", data.url);
-          currentMessage = `이미지가 업로드되었습니다: ${data.url}`;
-          // URL을 포함하는 페이지로 리디렉션
-          window.location.href = `https://interaction-beryl.vercel.app/image_page.html?image=${encodeURIComponent(
-            data.url
-          )}`;
+        if (data.error) {
+          console.error("이미지 업로드 오류:", data.error);
         } else {
-          console.error("업로드 오류:", data.error);
-          saveTriggered = false;
-          isDrawing = false;
+          console.log("이미지 URL:", data.imageUrl);
+          console.log("QR 코드 URL:", data.qrCodeUrl);
+          // QR 코드 페이지로 리디렉션
+          window.location.href = `/qrcode_page.html?imageUrl=${encodeURIComponent(
+            data.imageUrl
+          )}&qrCodeUrl=${encodeURIComponent(data.qrCodeUrl)}`;
         }
       })
       .catch((error) => {

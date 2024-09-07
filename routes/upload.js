@@ -3,6 +3,7 @@ const router = express.Router();
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const path = require("path");
+const QRCode = require("qrcode");
 
 // Cloudinary 설정
 cloudinary.config({
@@ -13,17 +14,24 @@ cloudinary.config({
 
 // 메모리 내에서 업로드 상태 유지
 let hasUploaded = false;
-
-// 업로드 상태를 확인하는 미들웨어
-router.use((req, res, next) => {
-  if (hasUploaded) {
-    return res.status(403).json({ error: "이미지 업로드가 완료되었습니다." });
-  }
-  next();
-});
+let imageUrl = null; // 업로드된 이미지 URL을 저장
 
 // POST /api/upload 요청 처리
 router.post("/upload", (req, res) => {
+  if (hasUploaded) {
+    // 이미 업로드된 이미지 URL로 QR 코드를 생성 후 JSON 응답
+    QRCode.toDataURL(imageUrl, (err, qrCodeUrl) => {
+      if (err) {
+        return res.status(500).json({ error: "QR 코드 생성 실패" });
+      }
+      return res.json({
+        imageUrl: imageUrl,
+        qrCodeUrl: qrCodeUrl,
+      });
+    });
+    return;
+  }
+
   const { image } = req.body;
 
   if (!image) {
@@ -56,12 +64,19 @@ router.post("/upload", (req, res) => {
         return res.status(500).json({ error: "Cloudinary 업로드 실패" });
       }
 
-      // 업로드 성공 시 상태 업데이트
+      imageUrl = result.secure_url;
       hasUploaded = true;
-      res.status(200).json({
-        message: "이미지 업로드 성공",
-        imageUrl: result.secure_url,
-        htmlPageUrl: "https://interaction-beryl.vercel.app/image_page.html", // HTML 페이지 URL
+
+      // QR 코드 생성 후 JSON 응답
+      QRCode.toDataURL(imageUrl, (err, qrCodeUrl) => {
+        if (err) {
+          return res.status(500).json({ error: "QR 코드 생성 실패" });
+        }
+
+        res.json({
+          imageUrl: imageUrl,
+          qrCodeUrl: qrCodeUrl,
+        });
       });
     });
   });

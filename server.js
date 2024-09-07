@@ -14,11 +14,6 @@ app.use(bodyParser.json({ limit: "10mb" })); // 이미지 파일 크기에 맞�
 app.use("/api", uploadRouter);
 app.use(express.static("public"));
 
-// 업로드 상태를 체크하는 라우터
-app.post("/api/check-upload-status", (req, res) => {
-  res.json({ hasUploaded });
-});
-
 // 업로드 라우터
 app.use("/api", uploadRouter);
 
