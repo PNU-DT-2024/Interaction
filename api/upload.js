@@ -1,10 +1,14 @@
+import cloudinary from "cloudinary";
 import { IncomingForm } from "formidable";
 import fs from "fs";
 import path from "path";
 
-/*서버리스 함수가 위치한 API 엔드포인트*/
-
-const uploadDir = path.join(process.cwd(), "api/uploads");
+// Cloudinary 설정
+cloudinary.config({
+  cloud_name: "dsqw9jpzx",
+  api_key: "148699952323388",
+  api_secret: "BiZZPQczWJwH90VjuOVShPI4dZk",
+});
 
 export const config = {
   api: {
@@ -13,13 +17,12 @@ export const config = {
 };
 
 export default async (req, res) => {
-  // CORS 헤더 추가
-  res.setHeader("Access-Control-Allow-Origin", "http://127.0.0.1:5500"); // 필요에 따라 적절한 도메인으로 설정
+  // CORS 설정
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
-    // Preflight 요청에 응답
     res.status(200).end();
     return;
   }
@@ -30,14 +33,8 @@ export default async (req, res) => {
   }
 
   const form = new IncomingForm();
-  form.uploadDir = uploadDir;
-  form.keepExtensions = true;
 
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
-  form.parse(req, (err, fields, files) => {
+  form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error("파일 처리 중 오류 발생:", err);
       res.status(500).json({ error: "Error processing the file" });
@@ -50,24 +47,34 @@ export default async (req, res) => {
       return;
     }
 
-    const filePath = path.join(uploadDir, uploadedFile.newFilename);
-    const imageUrl = `/uploads/${path.basename(filePath)}`;
+    try {
+      const result = await cloudinary.uploader.upload(uploadedFile.filepath, {
+        folder: "uploads",
+        resource_type: "auto",
+      });
 
-    fs.readFile(
-      path.join(process.cwd(), "templates", "image_page.html"),
-      "utf8",
-      (err, html) => {
-        if (err) {
-          console.error("HTML 파일 읽기 중 오류 발생:", err);
-          res.status(500).json({ error: "Error reading HTML file" });
-          return;
+      const imageUrl = result.secure_url;
+      console.log("이미지 업로드 성공:", imageUrl);
+
+      fs.readFile(
+        path.join(process.cwd(), "public", "image_page.html"),
+        "utf8",
+        (err, html) => {
+          if (err) {
+            console.error("HTML 파일 읽기 중 오류 발생:", err);
+            res.status(500).json({ error: "Error reading HTML file" });
+            return;
+          }
+
+          const modifiedHtml = html.replace("{{ image_url }}", imageUrl);
+
+          res.setHeader("Content-Type", "text/html");
+          res.status(200).send(modifiedHtml);
         }
-
-        const modifiedHtml = html.replace("{{ image_url }}", imageUrl);
-
-        res.setHeader("Content-Type", "text/html");
-        res.status(200).send(modifiedHtml);
-      }
-    );
+      );
+    } catch (error) {
+      console.error("Cloudinary 업로드 중 오류 발생:", error);
+      res.status(500).json({ error: "Error uploading to Cloudinary" });
+    }
   });
 };

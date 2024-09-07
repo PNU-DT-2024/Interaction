@@ -173,24 +173,19 @@ function saveImage() {
   shapeCanvas.text("손", width / 2, height / 2);
 
   shapeCanvas.canvas.toBlob((blob) => {
-    console.log("도형 캔버스에서 Blob 생성됨.");
-
     const formData = new FormData();
     formData.append("file", blob, "hand_image.png");
 
-    console.log("업로드를 위한 FormData 준비 완료.");
-
-    fetch("https://interaction-beryl.vercel.app", {
-      // 경로 수정 및 mode 추가
+    fetch("https://your-vercel-app.vercel.app/api/upload", {
       method: "POST",
       body: formData,
-      mode: "cors", // CORS 모드 명시
+      mode: "cors",
     })
       .then((response) => response.json())
       .then((data) => {
-        if (data.filePath) {
-          console.log("이미지 업로드 성공. 파일 경로:", data.filePath);
-          currentMessage = "이미지 저장 및 업로드 완료.";
+        if (data.imageUrl) {
+          console.log("이미지 업로드 성공. 파일 URL:", data.imageUrl);
+          window.open(data.imageUrl, "_blank"); // 새 탭에서 이미지 페이지 열기
         } else {
           console.error("이미지 업로드 오류:", data);
         }
