@@ -87,7 +87,7 @@ function onResults(results) {
       currentMessage = "손이 감지되었습니다. 5초 후에 화면을 저장합니다.";
       setTimeout(() => {
         if (handDetected) {
-          isDrawing = true;
+          isDrawing = true; // 모든 기능 중지
           saveTriggered = true;
           currentMessage = "5초 경과. 화면을 저장 중입니다.";
           console.log("손이 감지되었습니다. 5초 후 화면 저장 시작.");
