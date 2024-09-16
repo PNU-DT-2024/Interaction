@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Uploaded Image and QR Code</title>
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+      }
+      img {
+        margin: 20px;
+        max-width: 400px;
+        max-height: 600px;
+        border: 1px solid #ccc;
+      }
+      canvas {
+        width: 400px;
+        height: 600px;
+        margin-bottom: 20px;
+      }
+    </style>
+
+    <!-- QRCode.js 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body>
+    <h1>업로드된 이미지와 QR 코드</h1>
+
+    <canvas id="imageCanvas"></canvas>
+    <p>QR 코드:</p>
+    <div id="qrcode"></div>
+
+    <script>
+      // URL에서 이미지 URL을 가져오기
+      const params = new URLSearchParams(window.location.search);
+      const imageUrl = params.get("imageUrl");
+
+      if (imageUrl) {
+        // 캔버스에 이미지를 로드하여 400x600 크기로 맞추기
+        const canvas = document.getElementById("imageCanvas");
+        const context = canvas.getContext("2d");
+        const image = new Image();
+
+        image.onload = function () {
+          // 이미지 로드 후 400x600 크기로 캔버스에 그리기
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, 400, 600);
+
+          // QR 코드 생성
+          new QRCode(document.getElementById("qrcode"), {
+            text: imageUrl,
+            width: 128,
+            height: 128,
+          });
+        };
+
+        // 이미지 소스를 설정하여 로드 시작
+        image.src = imageUrl;
+      } else {
+        document.body.innerHTML = "<p>이미지 URL을 불러오지 못했습니다.</p>";
+      }
+
+      // 30초 후에 다시 웹캠 화면으로 돌아가기
+      setTimeout(() => {
+        window.location.href = "/"; // 시작 화면으로 리디렉션 (웹캠 화면)
+      }, 30000); // 30초 후에 리셋
+    </script>
+  </body>
+</html>
