@@ -14,12 +14,32 @@ let saveTriggered = false; // 이미지 저장이 한번만 되도록 플래그
 let prevHandY = null; // 이전 손의 Y 좌표 저장 변수
 let isMovingUp = false; // 손이 위로 움직이고 있는지 추적하는 변수
 let handPairsDistanceThreshold = 20; // 두 손이 얼마나 가까워져야 원을 생성할지 기준값 (픽셀)
+let hands; // Hands 인스턴스
+let camera; // Camera 인스턴스
 
 function setup() {
+  console.log("setup() 함수가 호출되었습니다.");
+
   const canvas = createCanvas(1280, 720);
   canvas.parent("container");
 
+  // 기존의 hands와 camera 인스턴스가 있으면 종료
+  if (hands) {
+    hands.close();
+    hands = null;
+  }
+
+  if (camera) {
+    camera.stop();
+    camera = null;
+  }
+
   // 웹캠 비디오 설정
+  if (video) {
+    video.remove();
+    video = null;
+  }
+
   video = createCapture(VIDEO, () => {
     video.size(1280, 720);
     video.hide();
@@ -33,7 +53,7 @@ function setup() {
   );
 
   // Mediapipe Hands 설정
-  const hands = new Hands({
+  hands = new Hands({
     locateFile: (file) =>
       `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
   });
@@ -45,15 +65,25 @@ function setup() {
   });
   hands.onResults(onResults);
 
-  const camera = new Camera(video.elt, {
+  // 카메라 설정
+  camera = new Camera(video.elt, {
     onFrame: async () => await hands.send({ image: video.elt }),
     width: 1280,
     height: 720,
   });
   camera.start();
+
+  // **변수 초기화 상태 확인**
+  console.log("setup() 함수가 호출되었습니다.");
+  console.log("Setup 단계에서 변수 초기화 확인");
+  console.log("trajectory 초기화 상태:", trajectory);
+  console.log("saveTriggered 초기화 상태:", saveTriggered);
+  console.log("lastCircleTime 초기화 상태:", lastCircleTime);
 }
 
 function onResults(results) {
+  console.log("onResults 함수가 호출되었습니다.");
+
   predictions = [];
   boundingBoxes = [];
 
@@ -61,7 +91,7 @@ function onResults(results) {
     let hand1 = results.multiHandLandmarks[0];
     let hand2 = results.multiHandLandmarks[1];
 
-    // 두 손의 9번 랜드마크 좌표 추출 (중지 손가락의 관절)
+    // 두 손의 9번 랜드마크 좌표 추출
     const middleJoint1 = createVector(hand1[9].x * width, hand1[9].y * height);
     const middleJoint2 = createVector(hand2[9].x * width, hand2[9].y * height);
 
@@ -73,14 +103,16 @@ function onResults(results) {
       middleJoint2.y
     );
 
-    // 9번 랜드마크가 가까워졌을 때 (20 픽셀 이하일 때) 원을 생성
+    // 9번 랜드마크가 가까워졌을 때 원을 생성
     const distanceThreshold = 20;
 
     if (distanceBetweenMiddleJoints < distanceThreshold) {
+      console.log("원 생성됨");
+
       // trajectory 배열에 원 추가
       trajectory.push({
         position: createVector(
-          (middleJoint1.x + middleJoint2.x) / 2, // 두 손의 9번 랜드마크 중간 위치
+          (middleJoint1.x + middleJoint2.x) / 2,
           (middleJoint1.y + middleJoint2.y) / 2
         ),
         width: random(50, 100),
@@ -88,24 +120,17 @@ function onResults(results) {
         color: color(random(255), random(255), random(255)),
       });
 
-      lastCircleTime = millis(); // 원 생성 시간 기록
+      console.log("trajectory 배열 길이:", trajectory.length);
+
+      lastCircleTime = Date.now(); // 수정: millis()에서 Date.now()로 변경
+      console.log("lastCircleTime 업데이트:", lastCircleTime);
+
       saveTriggered = false; // 새 원이 생성되면 저장 플래그 리셋
+      console.log("saveTriggered 상태:", saveTriggered);
     }
 
     predictions.push(hand1, hand2);
   }
-}
-
-// 바운딩 박스를 계산하는 함수
-function getBoundingBox(handLandmarks) {
-  const xCoords = handLandmarks.map((landmark) => landmark.x);
-  const yCoords = handLandmarks.map((landmark) => landmark.y);
-  return {
-    xMin: Math.min(...xCoords),
-    xMax: Math.max(...xCoords),
-    yMin: Math.min(...yCoords),
-    yMax: Math.max(...yCoords),
-  };
 }
 
 function draw() {
@@ -135,9 +160,19 @@ function draw() {
   }
 
   // 5초 동안 원이 생성되지 않았으면 이미지를 저장
-  if (lastCircleTime && millis() - lastCircleTime > 5000 && !saveTriggered) {
+  if (lastCircleTime && Date.now() - lastCircleTime > 5000 && !saveTriggered) {
+    console.log("saveImage() 함수 호출 조건 충족");
+    console.log("현재 시간:", Date.now());
+    console.log("마지막 원 생성 시간:", lastCircleTime);
+    console.log("시간 차이:", Date.now() - lastCircleTime);
+
     saveImage(); // 이미지 저장
     saveTriggered = true; // 이미지 저장이 한번만 일어나도록 플래그 설정
+  } else {
+    console.log("saveImage() 함수 호출 조건 미충족");
+    console.log("lastCircleTime:", lastCircleTime);
+    console.log("Date.now() - lastCircleTime:", Date.now() - lastCircleTime);
+    console.log("saveTriggered:", saveTriggered);
   }
 }
 
@@ -166,7 +201,8 @@ function drawGlowingCircle(x, y, w, h, baseColor) {
 
 // 이미지를 저장하는 함수
 function saveImage() {
-  console.log("저장할 이미지 생성 시작");
+  console.log("saveImage() 함수가 호출되었습니다.");
+  console.log("trajectory 배열 길이:", trajectory.length);
 
   if (trajectory.length === 0) {
     console.error("Trajectory is empty. No circles to save.");
@@ -182,15 +218,10 @@ function saveImage() {
 
   // trajectory 배열을 순회하면서 원을 그린다.
   trajectory.forEach((pos) => {
-    // 좌표와 크기를 각각 축소된 비율에 맞게 조정
     let scaledX = pos.position.x * scaleX; // X 좌표 축소
     let scaledY = pos.position.y * scaleY; // Y 좌표 축소
     let scaledWidth = pos.width * scaleX; // 원의 가로 크기 축소
     let scaledHeight = pos.height * scaleY; // 원의 세로 크기 축소
-
-    console.log(
-      `원 좌표: (${scaledX}, ${scaledY}), 크기: (${scaledWidth}, ${scaledHeight})`
-    );
 
     drawGlowingCircleOnGraphics(
       pg, // 그래픽 객체에 원을 그림
@@ -214,40 +245,55 @@ function saveImage() {
 
   // 캔버스를 이미지 데이터 URL로 변환
   const dataUrl = pg.canvas.toDataURL("image/png");
-  console.log("이미지 데이터 URL:", dataUrl); // 이미지 데이터 URL 로그
+  console.log("이미지 데이터 URL 생성 완료");
 
-  imgData = dataUrl;
+  // 이미지를 Cloudinary에 업로드
+  uploadImageToCloudinary(dataUrl);
+}
 
-  if (imgData) {
-    // 서버에 이미지 업로드 요청
-    fetch("/api/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: imgData }),
+function uploadImageToCloudinary(imageData) {
+  console.log("uploadImageToCloudinary() 함수가 호출되었습니다.");
+  fetch("/api/upload", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image: imageData }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        // 서버에서 에러 응답을 보낸 경우
+        return response.json().then((data) => {
+          throw new Error(data.error || "Unknown server error");
+        });
+      }
+      return response.json();
     })
-      .then((response) => {
-        console.log("응답 받음:", response); // 응답이 왔는지 확인
-        return response.json();
-      })
-      .then((data) => {
-        console.log("서버 응답 데이터:", data); // 서버에서 받은 데이터를 확인
-        if (data.imageUrl) {
-          console.log("이미지 업로드 성공, URL:", data.imageUrl);
+    .then((data) => {
+      if (data.imageUrl) {
+        console.log("이미지 업로드 성공, URL:", data.imageUrl);
+        // QR 코드 생성 및 이미지 페이지로 이동
+        const qrCodeUrl = data.qrCodeUrl;
+        window.location.href = `/image_page.html?imageUrl=${encodeURIComponent(
+          data.imageUrl
+        )}&qrCodeUrl=${encodeURIComponent(qrCodeUrl)}`;
+      } else {
+        console.error("이미지 업로드 실패");
+      }
+    })
+    .catch((error) => {
+      console.error("이미지 업로드 중 오류 발생:", error);
+    })
+    .finally(() => {
+      // 업로드 후 변수 초기화
+      trajectory = [];
+      saveTriggered = false;
+      lastCircleTime = null;
 
-          // 이미지 페이지로 리디렉션, URL 포함
-          window.location.href = `/image_page.html?imageUrl=${encodeURIComponent(
-            data.imageUrl
-          )}`;
-        } else {
-          console.error("이미지 업로드 실패");
-        }
-      })
-      .catch((error) => {
-        console.error("이미지 업로드 중 오류 발생:", error);
-      });
-  } else {
-    console.error("이미지 캡처 실패");
-  }
+      // 초기화 후 상태 확인
+      console.log("이미지 업로드 후 변수 초기화");
+      console.log("trajectory 초기화 상태:", trajectory);
+      console.log("saveTriggered 초기화 상태:", saveTriggered);
+      console.log("lastCircleTime 초기화 상태:", lastCircleTime);
+    });
 }
 
 // 그라데이션 원을 그래픽 객체에 그리는 함수

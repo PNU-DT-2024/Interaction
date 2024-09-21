@@ -66,9 +66,8 @@
         document.body.innerHTML = "<p>이미지 URL을 불러오지 못했습니다.</p>";
       }
 
-      // 30초 후에 다시 웹캠 화면으로 돌아가기
       setTimeout(() => {
-        window.location.href = "/"; // 시작 화면으로 리디렉션 (웹캠 화면)
+        window.location.href = "/?nocache=" + new Date().getTime();
       }, 30000); // 30초 후에 리셋
     </script>
   </body>
