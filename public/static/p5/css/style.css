@@ -22,10 +22,11 @@ body {
   left: 0;
   width: 200px;
   height: 100%;
-  object-fit: cover; 
-} */
-/* 비율에 맞게 채우기 */
+  object-fit: cover;
 }
+*/
+/* 비율에 맞게 채우기 */
+
 
 /* 이미지 페이지(image_page.html) 스타일 */
 body.image-page {
@@ -85,3 +86,4 @@ body.image-page {
   margin-top: 10px;
   margin-bottom: 10px; /* 아래쪽 여백 추가 */
   font-size: 18px; /* 텍스트 기본 크기 설정 */
+}
