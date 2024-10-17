@@ -10,15 +10,89 @@ let closeLogged = false;
 let lastApartTime = null;
 let lastCircleTime = null; // 마지막 원 생성 시간 기록
 let imgData;
+let hand9Position = []; // 손 규칙 디버깅용 hand[9]의 위치를 저장할 변수
 let saveTriggered = false; // 이미지 저장이 한번만 되도록 플래그
 let prevHandY = null; // 이전 손의 Y 좌표 저장 변수
 let isMovingUp = false; // 손이 위로 움직이고 있는지 추적하는 변수
-let handPairsDistanceThreshold = 20; // 두 손이 얼마나 가까워져야 원을 생성할지 기준값 (픽셀)
+let distanceThreshold = 20; // 두 손이 얼마나 가까워져야 원을 생성할지 기준값 (픽셀)
 let hands; // Hands 인스턴스
 let camera; // Camera 인스턴스
 
+// 이 밑 let, const 변수들 김경린이 쓰고 있음
+// 두 손 -> 한 손 순차 진행 아래 t/f 변수로 핸들링 중
+let bothHandsInRange = false; // 두 손이 범위 안에 있는지를 체크하는 변수
+let bothHandsDetected = false; // 두 손이 보였는지 추적하는 변수
+let oneHandRemaining = false; // 한 손만 남았는지 추적하는 변수
+let currentStep = 1; // 현재 단계 추적
+const movementThreshold = 150;
+const apartThreshold = 50;
+//인식 범위(파란 박스 범위 여기서 수정)
+const handRange = {
+  // x 좌표 640 기준 200 넓이로 우선 해둠
+  xMin: 540, // 최소 X 좌표
+  xMax: 740, // 최대 X 좌표
+  yMin: 0, // 최소 Y 좌표
+  yMax: 720, // 최대 Y 좌표
+};
+
+function initializeVideo(deviceId) {
+  // 웹캠 비디오 설정
+  if (video) {
+    video.remove();
+    video = null;
+  }
+
+  const constraints = {
+    video: {
+      deviceId: { exact: deviceId },
+      width: { ideal: 1280 },
+      height: { ideal: 720 },
+    },
+  };
+
+  navigator.mediaDevices
+    .getUserMedia(constraints)
+    .then((stream) => {
+      video = createCapture(stream);
+      video.size(1280, 720);
+      video.hide();
+      videoReady = true;
+
+      // video가 초기화된 후에 camera 설정
+      camera = new Camera(video.elt, {
+        onFrame: async () => await hands.send({ image: video.elt }),
+        width: 1280,
+        height: 720,
+      });
+      camera.start(); // camera 시작
+    })
+    .catch((err) => {
+      console.error("웹캠을 가져오는 중 오류 발생:", err);
+    });
+}
+
 function setup() {
-  console.log("setup() 함수가 호출되었습니다.");
+  //console.log("setup() 함수가 호출되었습니다.");
+
+  //웹캠 탐색용 코드
+  navigator.mediaDevices
+    .enumerateDevices()
+    .then((devices) => {
+      const videoDevices = devices.filter(
+        (device) => device.kind === "videoinput"
+      );
+      if (videoDevices.length > 0) {
+        console.log("사용 가능한 웹캠:", videoDevices);
+        // 첫 번째 웹캠을 선택
+        const selectedDeviceId = videoDevices[0].deviceId;
+        initializeVideo(selectedDeviceId);
+      } else {
+        console.error("웹캠이 연결되어 있지 않습니다.");
+      }
+    })
+    .catch((error) => {
+      console.error("장치 목록을 가져오는 중 오류 발생:", error);
+    });
 
   const canvas = createCanvas(1280, 720);
   canvas.parent("container");
@@ -35,6 +109,7 @@ function setup() {
   }
 
   // 웹캠 비디오 설정
+  /*
   if (video) {
     video.remove();
     video = null;
@@ -51,6 +126,7 @@ function setup() {
   video.elt.addEventListener("error", (err) =>
     console.error("Error capturing video:", err)
   );
+  */
 
   // Mediapipe Hands 설정
   hands = new Hands({
@@ -66,36 +142,65 @@ function setup() {
   hands.onResults(onResults);
 
   // 카메라 설정
-  camera = new Camera(video.elt, {
-    onFrame: async () => await hands.send({ image: video.elt }),
-    width: 1280,
-    height: 720,
-  });
-  camera.start();
+  // camera = new Camera(video.elt, {
+  //   onFrame: async () => await hands.send({ image: video.elt }),
+  //   width: 1280,
+  //   height: 720,
+  // });
+  // camera.start();
 
   // **변수 초기화 상태 확인**
-  console.log("setup() 함수가 호출되었습니다.");
-  console.log("Setup 단계에서 변수 초기화 확인");
-  console.log("trajectory 초기화 상태:", trajectory);
-  console.log("saveTriggered 초기화 상태:", saveTriggered);
-  console.log("lastCircleTime 초기화 상태:", lastCircleTime);
+  // console.log("setup() 함수가 호출되었습니다.");
+  // console.log("Setup 단계에서 변수 초기화 확인");
+  // console.log("trajectory 초기화 상태:", trajectory);
+  // console.log("saveTriggered 초기화 상태:", saveTriggered);
+  // console.log("lastCircleTime 초기화 상태:", lastCircleTime);
 }
 
+/**
 function onResults(results) {
-  console.log("onResults 함수가 호출되었습니다.");
-
   predictions = [];
   boundingBoxes = [];
+  hand9Position = [];
 
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length == 2) {
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    results.multiHandLandmarks.forEach((landmarks) => {
+      const hand9 = landmarks[9];
+      if (hand9) {
+        // 배열에 각 hand9의 위치 추가
+        hand9Position.push(createVector(hand9.x * width, hand9.y * height));
+      }
+
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+
+      landmarks.forEach((landmark) => {
+        let x = landmark.x * width;
+        let y = landmark.y * height;
+
+        minX = min(minX, x);
+        minY = min(minY, y);
+        maxX = max(maxX, x);
+        maxY = max(maxY, y);
+      });
+      boundingBoxes.push({ minX, minY, maxX, maxY });
+    });
+  }
+
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length === 2) {
+    if (results.multiHandLandmarks) {
+      console.log("인식된 손의 개수:", results.multiHandLandmarks.length);
+    }
+
+    console.log("두 손 다 들어옴");
     let hand1 = results.multiHandLandmarks[0];
     let hand2 = results.multiHandLandmarks[1];
 
-    // 두 손의 9번 랜드마크 좌표 추출
     const middleJoint1 = createVector(hand1[9].x * width, hand1[9].y * height);
     const middleJoint2 = createVector(hand2[9].x * width, hand2[9].y * height);
 
-    // 두 손의 9번 랜드마크 사이 거리 계산
     const distanceBetweenMiddleJoints = dist(
       middleJoint1.x,
       middleJoint1.y,
@@ -103,34 +208,189 @@ function onResults(results) {
       middleJoint2.y
     );
 
-    // 9번 랜드마크가 가까워졌을 때 원을 생성
-    const distanceThreshold = 20;
-
+    // 두 손이 가까워질 때 원 생성
     if (distanceBetweenMiddleJoints < distanceThreshold) {
-      console.log("원 생성됨");
+      if (!closeLogged) {
+        console.log("처음 원 생성됨");
+        // trajectory.push({
+        //   position: createVector(
+        //     (middleJoint1.x + middleJoint2.x) / 2,
+        //     (middleJoint1.y + middleJoint2.y) / 2
+        //   ),
+        //   width: random(50, 100),
+        //   height: random(50, 100),
+        //   color: color(random(255), random(255), random(255)),
+        // });
+        trajectory.push({
+          position: createVector(
+            middleJoint1.x, // 첫 번째 손의 중간 마디의 x 좌표
+            middleJoint1.y // 첫 번째 손의 중간 마디의 y 좌표
+          ),
+          width: random(50, 100),
+          height: random(50, 100),
+          color: color(random(255), random(255), random(255)),
+        });
 
-      // trajectory 배열에 원 추가
-      trajectory.push({
-        position: createVector(
-          (middleJoint1.x + middleJoint2.x) / 2,
-          (middleJoint1.y + middleJoint2.y) / 2
-        ),
-        width: random(50, 100),
-        height: random(50, 100),
-        color: color(random(255), random(255), random(255)),
-      });
+        closeLogged = true; // 원 생성 기록
+        lastCircleTime = Date.now(); // 시간 기록
+        saveTriggered = false; // 플래그 초기화
+      }
 
-      console.log("trajectory 배열 길이:", trajectory.length);
+      // 일정 거리 이상 움직였을 때만 원 생성
+      const currentPosition = createVector(
+        (middleJoint1.x + middleJoint2.x) / 2,
+        (middleJoint1.y + middleJoint2.y) / 2
+      );
 
-      lastCircleTime = Date.now(); // 수정: millis()에서 Date.now()로 변경
-      console.log("lastCircleTime 업데이트:", lastCircleTime);
+      const distanceMoved = dist(
+        circlePosition.x,
+        circlePosition.y,
+        currentPosition.x,
+        currentPosition.y
+      );
 
-      saveTriggered = false; // 새 원이 생성되면 저장 플래그 리셋
-      console.log("saveTriggered 상태:", saveTriggered);
+      const movementThreshold = 200; // 200픽셀 이상 움직였을 때
+      if (
+        distanceMoved > movementThreshold &&
+        Date.now() - lastCircleTime > 500
+      ) {
+        console.log("원 생성됨");
+        console.log("지금 거리 : ", distanceMoved);
+        trajectory.push({
+          position: currentPosition.copy(),
+          width: random(50, 100),
+          height: random(50, 100),
+          color: color(random(255), random(255), random(255)),
+        });
+        circlePosition = currentPosition.copy(); // 위치 업데이트
+        lastCircleTime = Date.now(); // 시간 업데이트
+      }
+    } else if (closeLogged && distanceBetweenMiddleJoints > apartThreshold) {
+      // 손이 멀어진 경우
+      console.log("손이 떨어졌음, closeLogged 리셋");
+      closeLogged = false; // 원 생성 가능 상태로 리셋
+      saveImage(); // 이미지 저장 흐름 시작
     }
 
     predictions.push(hand1, hand2);
   }
+}
+**/
+
+function onResults(results) {
+  predictions = [];
+  boundingBoxes = [];
+  hand9Position = [];
+
+  //손 규칙 디버깅 ([9]위치 & 핸드박스)
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    results.multiHandLandmarks.forEach((landmarks) => {
+      const hand9 = landmarks[9];
+      if (hand9) {
+        hand9Position.push(createVector(hand9.x * width, hand9.y * height));
+      }
+
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+
+      landmarks.forEach((landmark) => {
+        let x = landmark.x * width;
+        let y = landmark.y * height;
+
+        minX = min(minX, x);
+        minY = min(minY, y);
+        maxX = max(maxX, x);
+        maxY = max(maxY, y);
+      });
+      boundingBoxes.push({ minX, minY, maxX, maxY });
+    });
+  }
+
+  if (results.multiHandLandmarks) {
+    if (results.multiHandLandmarks.length === 2) {
+      let hand1 = results.multiHandLandmarks[0];
+      let hand2 = results.multiHandLandmarks[1];
+
+      const middleJoint1 = createVector(
+        hand1[9].x * width,
+        hand1[9].y * height
+      );
+      const middleJoint2 = createVector(
+        hand2[9].x * width,
+        hand2[9].y * height
+      );
+
+      if (isHandInRange(middleJoint1) && isHandInRange(middleJoint2)) {
+        console.log("범위 안에 두 손이 들어옴");
+        bothHandsInRange = true; // 두 손이 범위 안에 있다는 상태로 설정
+        predictions.push(hand1, hand2);
+        oneHandRemaining = false; // 한 손 남은 상태 리셋
+      }
+    }
+
+    if (bothHandsInRange && results.multiHandLandmarks.length === 1) {
+      let hand = results.multiHandLandmarks[0];
+      const currentPosition = createVector(
+        hand[9].x * width,
+        hand[9].y * height
+      );
+
+      if (!circlePosition) {
+        circlePosition = currentPosition.copy();
+      }
+
+      let distanceMoved = dist(
+        currentPosition.x,
+        currentPosition.y,
+        circlePosition.x,
+        circlePosition.y
+      );
+
+      if (
+        distanceMoved > movementThreshold &&
+        Date.now() - lastCircleTime > 500
+      ) {
+        console.log("원 생성됨");
+        trajectory.push({
+          position: currentPosition.copy(),
+          width: random(50, 100),
+          height: random(50, 100),
+          color: color(random(255), random(255), random(255)),
+        });
+
+        circlePosition = currentPosition.copy();
+        lastCircleTime = Date.now();
+        closeLogged = true;
+      }
+
+      oneHandRemaining = true; // 한 손만 남은 상태 표시
+      console.log("두 손이 보인 후 한 손만 인식됨");
+    }
+
+    if (
+      bothHandsInRange &&
+      results.multiHandLandmarks.length === 2 &&
+      oneHandRemaining
+    ) {
+      console.log("다시 두 손이 인식됨, 이미지 저장 흐름 시작");
+      closeLogged = false; // 원 생성 가능 상태로 리셋
+      oneHandRemaining = false; // 한 손만 남은 상태 리셋
+      saveImage(); // 이미지 저장 흐름 시작
+      bothHandsInRange = false; // 상태 초기화
+    }
+  }
+}
+
+// 손이 범위 안에 있는지 체크하는 함수
+function isHandInRange(handPosition) {
+  return (
+    handPosition.x >= handRange.xMin &&
+    handPosition.x <= handRange.xMax &&
+    handPosition.y >= handRange.yMin &&
+    handPosition.y <= handRange.yMax
+  );
 }
 
 function draw() {
@@ -147,6 +407,17 @@ function draw() {
   if (video.width > 0 && video.height > 0) {
     image(video, 0, 0, width, height);
 
+    // 인식 범위를 시각적으로 표시
+    noFill();
+    stroke(0, 0, 255); // 파란색 선으로 경계 표시
+    strokeWeight(2);
+    rect(
+      handRange.xMin,
+      handRange.yMin,
+      handRange.xMax - handRange.xMin,
+      handRange.yMax - handRange.yMin
+    );
+
     // 저장된 원 그리기
     trajectory.forEach((pos) => {
       drawGlowingCircle(
@@ -159,6 +430,20 @@ function draw() {
     });
   }
 
+  // 손 규칙 디버깅 [9]에 랜드마크 표시
+  hand9Position.forEach((pos) => {
+    fill(255, 0, 0); // 빨간색으로 표시
+    noStroke();
+    ellipse(pos.x, pos.y, 20, 20); // 원을 그린다
+  });
+  // 손 규칙 디버깅 손에 경계 상자 그리기
+  boundingBoxes.forEach((box) => {
+    stroke(0, 255, 0);
+    strokeWeight(2);
+    noFill();
+    rect(box.minX, box.minY, box.maxX - box.minX, box.maxY - box.minY);
+  });
+
   // 5초 동안 원이 생성되지 않았으면 이미지를 저장
   if (lastCircleTime && Date.now() - lastCircleTime > 5000 && !saveTriggered) {
     console.log("saveImage() 함수 호출 조건 충족");
@@ -169,10 +454,10 @@ function draw() {
     saveImage(); // 이미지 저장
     saveTriggered = true; // 이미지 저장이 한번만 일어나도록 플래그 설정
   } else {
-    console.log("saveImage() 함수 호출 조건 미충족");
-    console.log("lastCircleTime:", lastCircleTime);
-    console.log("Date.now() - lastCircleTime:", Date.now() - lastCircleTime);
-    console.log("saveTriggered:", saveTriggered);
+    // console.log("saveImage() 함수 호출 조건 미충족");
+    // console.log("lastCircleTime:", lastCircleTime);
+    // console.log("Date.now() - lastCircleTime:", Date.now() - lastCircleTime);
+    // console.log("saveTriggered:", saveTriggered);
   }
 }
 
