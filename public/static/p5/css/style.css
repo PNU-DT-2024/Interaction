@@ -1,26 +1,86 @@
 /* styles.css */
 
+/* 기본 스타일 초기화 */
 html,
 body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
+}
+
+/* 메인 페이지(index.html) 스타일 */
+#container {
+  width: 100vw; /* 뷰포트 너비 */
+  height: 100vh; /* 뷰포트 높이 */
+  position: relative;
   overflow: hidden; /* 스크롤바 제거 */
 }
 
-#container {
-  width: 100vw; /* 뷰포트 너비에 맞게 설정 */
-  height: 100vh; /* 뷰포트 높이에 맞게 설정 */
-  position: relative; /* 자식 요소의 위치를 상대적으로 설정 */
-}
-
-video,
-canvas {
+#container video,
+#container canvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover; /* 비율에 맞게 잘림 없이 채우기 */
+  object-fit: cover; /* 비율에 맞게 채우기 */
+}
+
+/* 이미지 페이지(image_page.html) 스타일 */
+body.image-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: none; /* 배경 제거 */
+  overflow: auto; /* 콘텐츠 오버플로우 시 스크롤 허용 */
+}
+
+#imageWrapper {
+  display: flex;
+  width: 80%;
+  max-width: 1200px;
+}
+
+#leftSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#leftSection img {
+  width: 320px;
+  height: 500px;
+  margin-bottom: 20px;
+}
+
+#rightSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+#separatorLineTop,
+#separatorLineBottom {
+  width: 530px;
+  height: 1px;
+  background-color: #000; /* 검은색 선 */
+  margin: 50px 0; /* 위아래 40px씩 여백 추가 */
+}
+
+#rightSection img#qrCodeImage {
+  width: 150px;
+  height: 150px;
+  margin: 50px 0; /* QR 코드 위아래에 40px 간격 추가 */
+}
+
+#rightSection p {
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px; /* 아래쪽 여백 추가 */
+  font-size: 18px; /* 텍스트 기본 크기 설정 */
 }

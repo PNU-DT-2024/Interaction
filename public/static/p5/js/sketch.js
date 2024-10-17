@@ -1,3 +1,6 @@
+// node server.js
+// http://127.0.0.1:5500/
+
 let video;
 let videoReady = false;
 let predictions = [];
@@ -16,6 +19,12 @@ let isMovingUp = false; // 손이 위로 움직이고 있는지 추적하는 변
 let handPairsDistanceThreshold = 20; // 두 손이 얼마나 가까워져야 원을 생성할지 기준값 (픽셀)
 let hands; // Hands 인스턴스
 let camera; // Camera 인스턴스
+
+// 원 크기 관련 변수 추가
+let startingCircleSize = 80; // 첫 번째 원의 크기
+let minCircleSize = 10; // 원의 최소 크기
+let circleSizeDecrement = 30; // 원의 크기를 줄이는 값
+let currentCircleSize = startingCircleSize; // 현재 원의 크기
 
 function setup() {
   console.log("setup() 함수가 호출되었습니다.");
@@ -74,11 +83,11 @@ function setup() {
   camera.start();
 
   // **변수 초기화 상태 확인**
-  console.log("setup() 함수가 호출되었습니다.");
-  console.log("Setup 단계에서 변수 초기화 확인");
-  console.log("trajectory 초기화 상태:", trajectory);
-  console.log("saveTriggered 초기화 상태:", saveTriggered);
-  console.log("lastCircleTime 초기화 상태:", lastCircleTime);
+  // console.log("setup() 함수가 호출되었습니다.");
+  // console.log("Setup 단계에서 변수 초기화 확인");
+  // console.log("trajectory 초기화 상태:", trajectory);
+  // console.log("saveTriggered 초기화 상태:", saveTriggered);
+  // console.log("lastCircleTime 초기화 상태:", lastCircleTime);
 }
 
 function onResults(results) {
@@ -109,14 +118,22 @@ function onResults(results) {
     if (distanceBetweenMiddleJoints < distanceThreshold) {
       console.log("원 생성됨");
 
+      // 원의 크기를 설정
+      let circleSize = currentCircleSize;
+
+      // 최소 크기 이상일 때만 크기를 감소
+      if (currentCircleSize > minCircleSize) {
+        currentCircleSize -= circleSizeDecrement;
+      }
+
       // trajectory 배열에 원 추가
       trajectory.push({
         position: createVector(
           (middleJoint1.x + middleJoint2.x) / 2,
           (middleJoint1.y + middleJoint2.y) / 2
         ),
-        width: random(50, 100),
-        height: random(50, 100),
+        width: circleSize,
+        height: circleSize,
         color: color(random(255), random(255), random(255)),
       });
 
@@ -161,10 +178,10 @@ function draw() {
 
   // 5초 동안 원이 생성되지 않았으면 이미지를 저장
   if (lastCircleTime && Date.now() - lastCircleTime > 5000 && !saveTriggered) {
-    console.log("saveImage() 함수 호출 조건 충족");
-    console.log("현재 시간:", Date.now());
-    console.log("마지막 원 생성 시간:", lastCircleTime);
-    console.log("시간 차이:", Date.now() - lastCircleTime);
+    // console.log("saveImage() 함수 호출 조건 충족");
+    // console.log("현재 시간:", Date.now());
+    // console.log("마지막 원 생성 시간:", lastCircleTime);
+    // console.log("시간 차이:", Date.now() - lastCircleTime);
 
     saveImage(); // 이미지 저장
     saveTriggered = true; // 이미지 저장이 한번만 일어나도록 플래그 설정
@@ -183,21 +200,45 @@ function drawGlowingCircle(x, y, w, h, baseColor) {
   push();
   translate(x, y);
 
+  // 채도와 밝기를 높여 색상을 명료하고 화사하게 설정
+  let adjustedSaturation = saturation(baseColor) * 1.5; // 채도를 150%로 증가
+  let adjustedBrightness = brightness(baseColor) * 1.5; // 밝기를 150%로 증가
+  adjustedSaturation = min(adjustedSaturation, 100); // 채도 최대값 제한
+  adjustedBrightness = min(adjustedBrightness, 100); // 밝기 최대값 제한
+
   for (let i = 100; i > 0; i--) {
-    fill(
-      hue(baseColor),
-      saturation(baseColor),
-      brightness(baseColor),
-      (10 / i) * 10
-    );
+    fill(hue(baseColor), adjustedSaturation, adjustedBrightness, (14 / i) * 14);
     ellipse(0, 0, w + i * 5, h + i * 5);
   }
 
-  fill(hue(baseColor), saturation(baseColor), brightness(baseColor), 20);
+  fill(hue(baseColor), adjustedSaturation, adjustedBrightness, 50);
   ellipse(0, 0, w, h);
 
   pop();
 }
+
+// 기존 그라데이션 효과로 원을 그리는 함수
+// function drawGlowingCircle(x, y, w, h, baseColor) {
+//   colorMode(HSB, 360, 100, 100, 100);
+//   noStroke();
+//   push();
+//   translate(x, y);
+
+//   for (let i = 100; i > 0; i--) {
+//     fill(
+//       hue(baseColor),
+//       saturation(baseColor),
+//       brightness(baseColor),
+//       (10 / i) * 10
+//     );
+//     ellipse(0, 0, w + i * 5, h + i * 5);
+//   }
+
+//   fill(hue(baseColor), saturation(baseColor), brightness(baseColor), 20);
+//   ellipse(0, 0, w, h);
+
+//   pop();
+// }
 
 // 이미지를 저장하는 함수
 function saveImage() {
@@ -209,12 +250,30 @@ function saveImage() {
     return;
   }
 
-  // 원본 크기 (1280x720)를 400x600 크기로 축소
+  // 원본 크기 (1280x720)를 400x700 크기로 축소
   let scaleX = 400 / 1280; // 가로 스케일링 비율
-  let scaleY = 600 / 720; // 세로 스케일링 비율
+  let scaleY = 700 / 720; // 세로 스케일링 비율
 
-  let pg = createGraphics(400, 600); // 이미지 크기를 400x600으로 설정
+  let pg = createGraphics(400, 700); // 이미지 크기를 400x600으로 설정
   pg.background(255); // 배경을 흰색으로 설정
+
+  // 상단에 '너와 나의 관계' 텍스트 추가
+  pg.fill(0, 0, 0);
+  pg.textSize(40);
+  pg.textAlign(CENTER, TOP); // 텍스트를 상단에 정렬
+  pg.textStyle(BOLD);
+  pg.text("너와 나의 관계", pg.width / 3, 20); // 상단에 텍스트 위치 설정
+
+  // 날짜와 시간 정보를 하단에 추가
+  pg.fill(0);
+  pg.textSize(20);
+  pg.textAlign(CENTER, BOTTOM); // 텍스트를 하단에 정렬
+  pg.textStyle(NORMAL);
+  let now = new Date();
+  let dateString = `${now.getFullYear()}/ ${
+    now.getMonth() + 1
+  }/ ${now.getDate()}/ ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+  pg.text(dateString, pg.width / 2, pg.height - 10); // 하단에 텍스트 위치 설정
 
   // trajectory 배열을 순회하면서 원을 그린다.
   trajectory.forEach((pos) => {
@@ -232,16 +291,6 @@ function saveImage() {
       pos.color
     );
   });
-
-  // 날짜와 시간 정보를 하단에 추가
-  pg.fill(0);
-  pg.textSize(20);
-  pg.textAlign(CENTER);
-  let now = new Date();
-  let dateString = `${now.getFullYear()}년 ${
-    now.getMonth() + 1
-  }월 ${now.getDate()}일 ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-  pg.text(dateString, pg.width / 2, pg.height - 30);
 
   // 캔버스를 이미지 데이터 URL로 변환
   const dataUrl = pg.canvas.toDataURL("image/png");
@@ -287,12 +336,13 @@ function uploadImageToCloudinary(imageData) {
       trajectory = [];
       saveTriggered = false;
       lastCircleTime = null;
+      currentCircleSize = startingCircleSize; // 원의 크기 초기화
 
       // 초기화 후 상태 확인
-      console.log("이미지 업로드 후 변수 초기화");
-      console.log("trajectory 초기화 상태:", trajectory);
-      console.log("saveTriggered 초기화 상태:", saveTriggered);
-      console.log("lastCircleTime 초기화 상태:", lastCircleTime);
+      // console.log("이미지 업로드 후 변수 초기화");
+      // console.log("trajectory 초기화 상태:", trajectory);
+      // console.log("saveTriggered 초기화 상태:", saveTriggered);
+      // console.log("lastCircleTime 초기화 상태:", lastCircleTime);
     });
 }
 
@@ -303,21 +353,50 @@ function drawGlowingCircleOnGraphics(pg, x, y, w, h, baseColor) {
   pg.push();
   pg.translate(x, y);
 
+  // 채도와 밝기를 높여 색상을 명료하고 화사하게 설정
+  let adjustedSaturation = saturation(baseColor) * 1.5; // 채도를 150%로 증가
+  let adjustedBrightness = brightness(baseColor) * 1.5; // 밝기를 150%로 증가
+  adjustedSaturation = min(adjustedSaturation, 100); // 채도 최대값 제한
+  adjustedBrightness = min(adjustedBrightness, 100); // 밝기 최대값 제한
+
   for (let i = 100; i > 0; i--) {
     pg.fill(
       hue(baseColor),
-      saturation(baseColor),
-      brightness(baseColor),
-      (10 / i) * 10
+      adjustedSaturation,
+      adjustedBrightness,
+      (14 / i) * 14
     );
-    pg.ellipse(0, 0, w + i * 5, h + i * 5);
+    pg.ellipse(0, 0, w + i * 5, +i * 5);
   }
 
-  pg.fill(hue(baseColor), saturation(baseColor), brightness(baseColor), 20);
+  pg.fill(hue(baseColor), adjustedSaturation, adjustedBrightness, 50);
   pg.ellipse(0, 0, w, h);
 
   pg.pop();
 }
+
+// 기존 그라데이션 원을 그래픽 객체에 그리는 함수
+// function drawGlowingCircleOnGraphics(pg, x, y, w, h, baseColor) {
+//   pg.colorMode(HSB, 360, 100, 100, 100);
+//   pg.noStroke();
+//   pg.push();
+//   pg.translate(x, y);
+
+//   for (let i = 100; i > 0; i--) {
+//     pg.fill(
+//       hue(baseColor),
+//       saturation(baseColor),
+//       brightness(baseColor),
+//       (10 / i) * 10
+//     );
+//     pg.ellipse(0, 0, w + i * 5, h + i * 5);
+//   }
+
+//   pg.fill(hue(baseColor), saturation(baseColor), brightness(baseColor), 20);
+//   pg.ellipse(0, 0, w, h);
+
+//   pg.pop();
+// }
 
 function checkVideoDimensions() {
   console.log("Checking video dimensions:", video.width, video.height);
