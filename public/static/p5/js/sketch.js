@@ -217,29 +217,6 @@ function drawGlowingCircle(x, y, w, h, baseColor) {
   pop();
 }
 
-// 기존 그라데이션 효과로 원을 그리는 함수
-// function drawGlowingCircle(x, y, w, h, baseColor) {
-//   colorMode(HSB, 360, 100, 100, 100);
-//   noStroke();
-//   push();
-//   translate(x, y);
-
-//   for (let i = 100; i > 0; i--) {
-//     fill(
-//       hue(baseColor),
-//       saturation(baseColor),
-//       brightness(baseColor),
-//       (10 / i) * 10
-//     );
-//     ellipse(0, 0, w + i * 5, h + i * 5);
-//   }
-
-//   fill(hue(baseColor), saturation(baseColor), brightness(baseColor), 20);
-//   ellipse(0, 0, w, h);
-
-//   pop();
-// }
-
 // 이미지를 저장하는 함수
 function saveImage() {
   console.log("saveImage() 함수가 호출되었습니다.");
@@ -374,29 +351,6 @@ function drawGlowingCircleOnGraphics(pg, x, y, w, h, baseColor) {
 
   pg.pop();
 }
-
-// 기존 그라데이션 원을 그래픽 객체에 그리는 함수
-// function drawGlowingCircleOnGraphics(pg, x, y, w, h, baseColor) {
-//   pg.colorMode(HSB, 360, 100, 100, 100);
-//   pg.noStroke();
-//   pg.push();
-//   pg.translate(x, y);
-
-//   for (let i = 100; i > 0; i--) {
-//     pg.fill(
-//       hue(baseColor),
-//       saturation(baseColor),
-//       brightness(baseColor),
-//       (10 / i) * 10
-//     );
-//     pg.ellipse(0, 0, w + i * 5, h + i * 5);
-//   }
-
-//   pg.fill(hue(baseColor), saturation(baseColor), brightness(baseColor), 20);
-//   pg.ellipse(0, 0, w, h);
-
-//   pg.pop();
-// }
 
 function checkVideoDimensions() {
   console.log("Checking video dimensions:", video.width, video.height);
