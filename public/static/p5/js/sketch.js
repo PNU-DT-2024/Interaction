@@ -1,6 +1,9 @@
 // node server.js
 // http://127.0.0.1:5500/
 
+// node server.js
+// http://127.0.0.1:5500/
+
 let video;
 let videoReady = false;
 let predictions = [];
@@ -28,12 +31,13 @@ let oneHandRemaining = false; // 한 손만 남았는지 추적하는 변수
 let currentStep = 1; // 현재 단계 추적
 const movementThreshold = 150;
 const apartThreshold = 50;
-// 인식 범위 설정
+
+//[변경된 부분 1] 인식 범위 설정 (범위를 넓혔습니다)
 const handRange = {
-  xMin: 540, // 최소 X 좌표
-  xMax: 740, // 최대 X 좌표
-  yMin: 0, // 최소 Y 좌표
-  yMax: 720, // 최대 Y 좌표
+  xMin: 0, // 최소 X 좌표를 0으로 설정하여 화면 왼쪽 끝으로 확장
+  xMax: width, // 최대 X 좌표를 캔버스의 너비로 설정하여 화면 오른쪽 끝으로 확장
+  yMin: 0,
+  yMax: height,
 };
 
 function initializeVideo(deviceId) {
@@ -132,7 +136,10 @@ function onResults(results) {
   boundingBoxes = [];
   hand9Position = [];
 
+  //[변경된 부분 2]
   if (results.multiHandLandmarks) {
+    console.log("인식된 손의 개수:", results.multiHandLandmarks.length);
+
     if (results.multiHandLandmarks.length === 2) {
       let hand1 = results.multiHandLandmarks[0];
       let hand2 = results.multiHandLandmarks[1];
@@ -145,9 +152,9 @@ function onResults(results) {
         hand2[9].x * width,
         hand2[9].y * height
       );
-
+      //[변경된 부분 3]
       if (isHandInRange(middleJoint1) && isHandInRange(middleJoint2)) {
-        console.log("범위 안에 두 손이 들어옴");
+        console.log("두 손이 인식되었습니다.");
         bothHandsInRange = true; // 두 손이 범위 안에 있다는 상태로 설정
         predictions.push(hand1, hand2);
         oneHandRemaining = false; // 한 손 남은 상태 리셋
@@ -188,9 +195,9 @@ function onResults(results) {
         lastCircleTime = Date.now();
         closeLogged = true;
       }
-
+      //[변경된 부분 4]
       oneHandRemaining = true; // 한 손만 남은 상태 표시
-      console.log("두 손이 보인 후 한 손만 인식됨");
+      console.log("한 손만 남았습니다.");
     }
 
     if (
@@ -231,6 +238,17 @@ function draw() {
   if (video.width > 0 && video.height > 0) {
     image(video, 0, 0, width, height);
 
+    // [변경된 부분 5] 인식 범위를 시각적으로 표시**
+    noFill();
+    stroke(0, 0, 255); // 파란색 선으로 경계 표시
+    strokeWeight(2);
+    rect(
+      handRange.xMin,
+      handRange.yMin,
+      handRange.xMax - handRange.xMin,
+      handRange.yMax - handRange.yMin
+    );
+
     // 저장된 원 그리기
     trajectory.forEach((pos) => {
       drawGlowingCircle(
@@ -248,13 +266,14 @@ function draw() {
   textSize(32);
   textAlign(CENTER, CENTER);
 
+  //[변경된 부분 6]
   // 현재 단계에 따라 다른 메시지 표시
   if (!bothHandsInRange) {
     text("두손을 화면 중앙에 올려주세요", width / 2, height - 50);
   } else if (bothHandsInRange && !oneHandRemaining) {
     text("지금 악수를 하세요", width / 2, height - 50);
   } else if (oneHandRemaining) {
-    // 필요에 따라 메시지를 추가하거나 생략할 수 있습니다.
+    text("손을 움직여보세요", width / 2, height - 50);
   }
 
   // 5초 동안 원이 생성되지 않았으면 이미지를 저장
