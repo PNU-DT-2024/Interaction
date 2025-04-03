@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <!-- 메타 데이터 -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>업로드된 이미지와 QR 코드</title>
+    <!-- 스타일 시트 -->
+    <link rel="stylesheet" href="/static/p5/css/style.css" />
+    <!-- QRCode.js 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  </head>
+  <body class="image-page">
+    <div id="imageWrapper">
+      <!-- 왼쪽 섹션: 이미지 표시 -->
+      <div id="leftSection">
+        <img id="uploadedImage" alt="Uploaded Image" style="display: none" />
+        <canvas
+          id="imageCanvas"
+          width="400"
+          height="700"
+          style="display: none"
+        ></canvas>
+      </div>
+
+      <!-- 오른쪽 섹션: QR 코드 및 텍스트 -->
+      <div id="rightSection">
+        <div id="separatorLineTop"></div>
+        <img id="qrCodeImage" alt="QR Code" style="display: none" />
+        <p>QR 코드를 스캔하여 우리의 관계를 담은 포토카드를 저장하세요.</p>
+        <p>접속 후 이미지를 꾸욱 눌러 저장하기 선택해주세요.</p>
+        <div id="separatorLineBottom"></div>
+      </div>
+    </div>
+
+    <script>
+      // URL에서 쿼리 파라미터 추출
+      const params = new URLSearchParams(window.location.search);
+      const imageUrl = params.get("imageUrl");
+      const qrCodeUrl = params.get("qrCodeUrl");
+
+      // 이미지와 QR 코드를 페이지에 표시
+      if (imageUrl && qrCodeUrl) {
+        // 업로드된 이미지와 QR 코드 이미지를 표시
+        document.getElementById("uploadedImage").src = imageUrl;
+        document.getElementById("uploadedImage").style.display = "block";
+
+        document.getElementById("qrCodeImage").src = qrCodeUrl;
+        document.getElementById("qrCodeImage").style.display = "block";
+
+        // 캔버스와 동적 QR 코드 생성을 숨김
+        document.getElementById("imageCanvas").style.display = "none";
+      } else if (imageUrl) {
+        // 캔버스에 이미지를 그려서 표시하고 QR 코드를 생성
+        const canvas = document.getElementById("imageCanvas");
+        const context = canvas.getContext("2d");
+        const image = new Image();
+
+        image.onload = function () {
+          // 캔버스에 이미지 그리기
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+          // 캔버스를 표시
+          canvas.style.display = "block";
+
+          // QR 코드 생성 및 표시
+          new QRCode(document.getElementById("qrcode"), {
+            text: imageUrl,
+            width: 128,
+            height: 128,
+          });
+          document.getElementById("qrcode").style.display = "block";
+        };
+
+        // 이미지 로드 시작
+        image.src = imageUrl;
+
+        // 이미지 요소와 QR 코드 이미지 요소를 숨김
+        document.getElementById("uploadedImage").style.display = "none";
+        document.getElementById("qrCodeImage").style.display = "none";
+      } else {
+        // 이미지 URL이 없을 경우 에러 메시지 표시
+        document.body.innerHTML =
+          "<p>이미지나 QR 코드 정보를 불러오지 못했습니다.</p>";
+      }
+
+      // 30초 후에 메인 페이지로 리다이렉트
+      setTimeout(() => {
+        window.location.href = "/?nocache=" + new Date().getTime();
+      }, 30000); // 30초 후에 리셋
+    </script>
+  </body>
+</html>

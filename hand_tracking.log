@@ -1,0 +1,37 @@
+2024-08-05 22:35:08,461 - DEBUG - video_feed() started
+2024-08-05 22:35:08,589 - ERROR - Error: Could not open video capture.
+2024-08-05 22:36:42,834 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:42,834 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:42,843 - INFO - 127.0.0.1 - - [2024-08-05 22:36:42] "GET / HTTP/1.1" 200 601 0.009549
+2024-08-05 22:36:42,855 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:42,855 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:42,861 - INFO - 127.0.0.1 - - [2024-08-05 22:36:42] "GET /static/p5/js/sketch.js HTTP/1.1" 200 6498 0.006797
+2024-08-05 22:36:42,899 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:42,899 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:42,900 - INFO - 127.0.0.1 - - [2024-08-05 22:36:42] "GET /socket.io/?EIO=4&transport=polling&t=P4YmQcI HTTP/1.1" 200 254 0.000869
+2024-08-05 22:36:42,947 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:42,947 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:42,947 - DEBUG - Can only upgrade connection if using GET method.
+2024-08-05 22:36:42,948 - INFO - 127.0.0.1 - - [2024-08-05 22:36:42] "POST /socket.io/?EIO=4&transport=polling&t=P4YmQcS&sid=4wFqKNIMkWA9i3zPAAAA HTTP/1.1" 200 195 0.000589
+2024-08-05 22:36:42,948 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:42,948 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:42,948 - INFO - 127.0.0.1 - - [2024-08-05 22:36:42] "GET /socket.io/?EIO=4&transport=polling&t=P4YmQcS.0&sid=4wFqKNIMkWA9i3zPAAAA HTTP/1.1" 200 189 0.000099
+2024-08-05 22:36:42,948 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:42,948 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:42,948 - DEBUG - Attempting to upgrade connection
+2024-08-05 22:36:42,949 - DEBUG - WebSocket request accepted, switching protocols
+2024-08-05 22:36:43,027 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:43,027 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:43,028 - INFO - 127.0.0.1 - - [2024-08-05 22:36:43] "GET /socket.io/?EIO=4&transport=polling&t=P4YmQeG.0&sid=4wFqKNIMkWA9i3zPAAAA HTTP/1.1" 200 157 0.000782
+2024-08-05 22:36:43,029 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:43,029 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:43,029 - DEBUG - Can only upgrade connection if using GET method.
+2024-08-05 22:36:43,029 - INFO - 127.0.0.1 - - [2024-08-05 22:36:43] "POST /socket.io/?EIO=4&transport=polling&t=P4YmQeG&sid=4wFqKNIMkWA9i3zPAAAA HTTP/1.1" 200 195 0.000810
+2024-08-05 22:36:43,058 - DEBUG - Initializing WebSocket
+2024-08-05 22:36:43,058 - DEBUG - Validating WebSocket request
+2024-08-05 22:36:43,058 - INFO - 127.0.0.1 - - [2024-08-05 22:36:43] "GET /favicon.ico HTTP/1.1" 404 331 0.000521
+2024-08-05 22:37:40,547 - DEBUG - Closed WebSocket
+2024-08-05 22:37:40,548 - DEBUG - Failed to write closing frame -> closing socket
+2024-08-05 22:37:40,548 - DEBUG - Closed WebSocket
+2024-08-05 22:38:27,305 - DEBUG - Failed to write closing frame -> closing socket
+2024-08-05 22:38:27,305 - DEBUG - Closed WebSocket
